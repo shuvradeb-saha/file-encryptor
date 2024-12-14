@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="saha.project.fileencryptor.EncryptionController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
+
+    <Label text="File Encryptor" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+    <Label fx:id="welcomeText"/>
+    <HBox spacing="10.0">
+        <Button text="Choose Folder" onAction="#onChooseFolderButtonClick"/>
+        <Label fx:id="selectedFolderLabel" text="No folder selected"/>
+    </HBox>
+
+    <HBox spacing="10.0">
+        <PasswordField fx:id="passwordField" promptText="Enter password"/>
+        <Button text="Encrypt" onAction="#onEncryptButtonClick" disable="true" fx:id="encryptButton"/>
+        <Button text="Decrypt" onAction="#onDecryptButtonClick" disable="true" fx:id="decryptButton"/>
+    </HBox>
+
+    <HBox spacing="10.0">
+        <Label fx:id="doneLabel"/>
+    </HBox>
+</VBox>
