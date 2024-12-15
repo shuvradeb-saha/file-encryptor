@@ -1,5 +1,8 @@
 package saha.project.fileencryptor.encryption;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
@@ -10,6 +13,7 @@ import java.util.Collections;
 
 public class FolderEncryptionManager extends AbstractEncryptionManager
     implements EncryptionManager {
+  private static final Logger logger = LoggerFactory.getLogger(FolderEncryptionManager.class);
   private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
 
   @Override
