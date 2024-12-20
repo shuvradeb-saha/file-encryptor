@@ -17,7 +17,7 @@ public class EncryptorApplication extends Application {
   public void start(Stage stage) throws IOException {
     FXMLLoader fxmlLoader =
         new FXMLLoader(EncryptorApplication.class.getResource("encryptor-view.fxml"));
-    Scene scene = new Scene(fxmlLoader.load(), 420, 240);
+    Scene scene = new Scene(fxmlLoader.load(), 420, 340);
     stage.setTitle("Shuvra's File Encryptor");
     // Set the application icon
     try (InputStream stream = getClass().getResourceAsStream(ICON_PATH)) {
