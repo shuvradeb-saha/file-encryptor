@@ -59,7 +59,7 @@ public class EncryptionController {
     String path = selectedFolderLabel.getText();
     String key = passwordField.getText();
     progressIndicator.setVisible(true);
-    doneLabel.setText("");
+    doneLabel.setText(isEncrypt ? "Encrypting Data..." : "Decrypting Data...");
     new Thread(
             () -> {
               try {

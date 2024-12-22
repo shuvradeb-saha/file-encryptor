@@ -1,20 +1,24 @@
 package saha.project.fileencryptor.encryption;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
-import java.util.Collections;
+import java.util.Arrays;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.commons.io.FileUtils.byteCountToDisplaySize;
 
 public class FolderEncryptionManager extends AbstractEncryptionManager
     implements EncryptionManager {
-  private static final Logger logger = LoggerFactory.getLogger(FolderEncryptionManager.class);
+  public static long sizeProcessed = 0;
   private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
+  private static final Logger logger = LoggerFactory.getLogger(FolderEncryptionManager.class);
 
   @Override
   public void encrypt(String folderPath, String key) throws Exception {
@@ -34,19 +38,24 @@ public class FolderEncryptionManager extends AbstractEncryptionManager
 
   private void startOperation(final String folderPath, final String key, final boolean isEncrypt)
       throws Exception {
+    sizeProcessed = 0;
     File folder = new File(folderPath);
     validatePath(folder);
     processFiles(folder, generateKeyFromPasskey(key), new IvParameterSpec(new byte[16]), isEncrypt);
   }
 
-  private static void processFiles(
+  private void processFiles(
       File folder, SecretKey secretKey, IvParameterSpec ivSpec, boolean encrypt) throws Exception {
     var files = folder.listFiles();
     if (files == null) {
       return;
     }
 
+    long totalSize = getTotalSize(files);
+    logger.info(
+        "Processing {} files. Total size: {}", files.length, byteCountToDisplaySize(totalSize));
     for (File file : files) {
+      long size = file.length();
       if (file.isDirectory()) {
         processFiles(file, secretKey, ivSpec, encrypt);
       } else {
@@ -55,11 +64,16 @@ public class FolderEncryptionManager extends AbstractEncryptionManager
         } else {
           decryptFile(file, secretKey, ivSpec);
         }
+        sizeProcessed += size;
       }
+      logger.info(
+          "Processed {} out of {}",
+          byteCountToDisplaySize(sizeProcessed),
+          byteCountToDisplaySize(totalSize));
     }
   }
 
-  private static void encryptFile(File file, SecretKey secretKey, IvParameterSpec ivSpec)
+  private void encryptFile(File file, SecretKey secretKey, IvParameterSpec ivSpec)
       throws Exception {
     // Read file content
     byte[] fileData = Files.readAllBytes(file.toPath());
@@ -75,7 +89,7 @@ public class FolderEncryptionManager extends AbstractEncryptionManager
     }
   }
 
-  private static void decryptFile(File file, SecretKey secretKey, IvParameterSpec ivSpec)
+  private void decryptFile(File file, SecretKey secretKey, IvParameterSpec ivSpec)
       throws Exception {
     // Read encrypted file content
     byte[] fileData = Files.readAllBytes(file.toPath());
@@ -89,5 +103,9 @@ public class FolderEncryptionManager extends AbstractEncryptionManager
     try (FileOutputStream fos = new FileOutputStream(file)) {
       fos.write(decryptedData);
     }
+  }
+
+  private long getTotalSize(File[] files) {
+    return Arrays.stream(files).mapToLong(File::length).sum();
   }
 }
