@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
@@ -16,9 +19,10 @@ import static org.apache.commons.io.FileUtils.byteCountToDisplaySize;
 
 public class FolderEncryptionManager extends AbstractEncryptionManager
     implements EncryptionManager {
-  public static long sizeProcessed = 0;
+  public static AtomicLong sizeProcessed = new AtomicLong(0);
   private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
   private static final Logger logger = LoggerFactory.getLogger(FolderEncryptionManager.class);
+  private static ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
   @Override
   public void encrypt(String folderPath, String key) throws Exception {
@@ -38,10 +42,11 @@ public class FolderEncryptionManager extends AbstractEncryptionManager
 
   private void startOperation(final String folderPath, final String key, final boolean isEncrypt)
       throws Exception {
-    sizeProcessed = 0;
+    sizeProcessed = new AtomicLong(0);
     File folder = new File(folderPath);
     validatePath(folder);
     processFiles(folder, generateKeyFromPasskey(key), new IvParameterSpec(new byte[16]), isEncrypt);
+    logger.info("Finished Processing. Total size: {}", byteCountToDisplaySize(sizeProcessed.get()));
   }
 
   private void processFiles(
@@ -59,17 +64,24 @@ public class FolderEncryptionManager extends AbstractEncryptionManager
       if (file.isDirectory()) {
         processFiles(file, secretKey, ivSpec, encrypt);
       } else {
-        if (encrypt) {
-          encryptFile(file, secretKey, ivSpec);
-        } else {
-          decryptFile(file, secretKey, ivSpec);
-        }
-        sizeProcessed += size;
+        executor.submit(
+            () -> {
+              try {
+                if (encrypt) {
+                  encryptFile(file, secretKey, ivSpec);
+                } else {
+                  decryptFile(file, secretKey, ivSpec);
+                }
+                sizeProcessed.addAndGet(size);
+                logger.info(
+                    "Processed {} out of {}",
+                    byteCountToDisplaySize(sizeProcessed.get()),
+                    byteCountToDisplaySize(totalSize));
+              } catch (Exception e) {
+                logger.error("Error processing file: " + file.getAbsolutePath(), e);
+              }
+            });
       }
-      logger.info(
-          "Processed {} out of {}",
-          byteCountToDisplaySize(sizeProcessed),
-          byteCountToDisplaySize(totalSize));
     }
   }
 
